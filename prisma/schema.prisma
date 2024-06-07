@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./store.db"
+}
+
+model User {
+  id             Int        @id @default(autoincrement())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  email          String     @unique
+  password       Password?  // Relación opcional con Password
+  firstName      String
+  lastName       String
+  bio            String?
+  birthday       DateTime?  // Cambiado a DateTime para manejar fechas correctamente
+  gender         String?
+  avatar         String?
+  profession     String?
+  community      String?
+  city           String?
+  province       String?
+  threadId       String?
+  address        String?
+  contract       Contract? 
+}
+
+model Contract {
+  id             Int        @id @default(autoincrement())
+  startDate      String?
+  endDate        String?
+  contractType   String?
+  trialPeriod    Boolean?
+  workdayType    String?
+  weeklyHours    Float?
+  netSalary      Float?
+  grossSalary    Float?
+  extraPayments  Int?
+  sector         String?
+  cotizationGroup String?
+  userId         Int        @unique // Asegúrate de que cada usuario tenga un único contrato
+  user           User       @relation(fields: [userId], references: [id])
+}
+
+model Password {
+  id       String @id @default(uuid())
+  salt     String
+  hash     String
+  userId   Int    @unique // Relaciona la contraseña con el usuario
+  user     User   @relation(fields: [userId], references: [id])
+}

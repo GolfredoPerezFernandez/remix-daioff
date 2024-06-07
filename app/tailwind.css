@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@media (min-width: 768px) {
+    .hero-container {
+      padding-left: 240px; /* Ajusta este valor según el ancho de tu sidebar */
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .hero-container {
+      margin-left: 0; /* Sin margen para pantallas pequeñas */
+      padding-left: 16px; /* Añade un poco de padding si es necesario */
+      padding-right: 16px; /* Añade un poco de padding si es necesario */
+      text-align: center; /* Centra el texto en pantallas pequeñas */
+    }
+  }
+  
+ 
+/* tailwind.css or your global CSS file */
+
+.hero-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+}
+
+h1 {
+  max-width: 80%;
+  margin: 0 auto;
+}

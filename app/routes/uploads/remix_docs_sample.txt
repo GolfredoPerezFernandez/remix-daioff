@@ -1,0 +1,32 @@
+URL: https://remix.run/docs/en/v1
+
+
+        Welcome to Remix! Here you'll find everything you need to know to start building with Remix, including guides, tutorials, and reference material.
+        
+
+================================================================================
+
+URL: https://remix.run/docs/en/v1/guides
+
+
+        Guides: Dive deep into the core concepts of Remix with our detailed guides. Topics include routing, data loading, caching, and more.
+        
+
+================================================================================
+
+URL: https://remix.run/docs/en/v1/tutorials
+
+
+        Tutorials: Follow step-by-step tutorials to learn how to build applications with Remix from scratch. Each tutorial covers a specific topic in depth.
+        
+
+================================================================================
+
+URL: https://remix.run/docs/en/v1/api
+
+
+        API Reference: Detailed documentation on the Remix API, including hooks, components, and utility functions to help you build your application.
+        
+
+================================================================================
+
