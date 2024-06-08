@@ -20,7 +20,7 @@ export const action: ActionFunction = async ({ request }) => {
 
     await prisma.user.update({
       where: { id: parseInt(userId) },
-      data: { threadId: null },
+      data: { threadId: null ,assistantID:null},
     });
 
     return json({ success: true });

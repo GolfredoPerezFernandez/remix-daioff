@@ -9,7 +9,6 @@ datasource db {
   provider = "sqlite"
   url      = "file:./store.db"
 }
-
 model User {
   id             Int        @id @default(autoincrement())
   createdAt      DateTime   @default(now())
@@ -28,8 +27,10 @@ model User {
   province       String?
   threadId       String?
   address        String?
-  contract       Contract? 
+  contract       Contract?
+  assistantID    String?  // Nuevo campo para guardar assistantID
 }
+
 
 model Contract {
   id             Int        @id @default(autoincrement())

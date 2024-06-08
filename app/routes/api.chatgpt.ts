@@ -51,6 +51,7 @@ export async function action({ request }: ActionFunctionArgs) {
       select: {
         id: true,
         threadId: true,
+        assistantID: true,
       },
     });
 
@@ -72,54 +73,52 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
-    let fileId = '';
-    if (file) {
-      const filePath = path.join(__dirname, 'uploads', file.name);
-      if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
-        fs.mkdirSync(path.join(__dirname, 'uploads'));
+    let myAssistantId = user.assistantID;
+      let fileId = '';
+      if (file) {
+        const filePath = path.join(__dirname, 'uploads', file.name);
+        if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
+          fs.mkdirSync(path.join(__dirname, 'uploads'));
+        }
+        fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
+
+        console.log("Uploading file to OpenAI");
+        const fileUploadResponse = await openai.files.create({
+          file: fs.createReadStream(filePath),
+          purpose: 'assistants',
+        });
+        fileId = fileUploadResponse.id;
+        console.log("File uploaded with ID:", fileId);
       }
-      fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
 
-      console.log("Uploading file to OpenAI");
-      const fileUploadResponse = await openai.files.create({
-        file: fs.createReadStream(filePath),
-        purpose: 'assistants',
-      });
-      fileId = fileUploadResponse.id;
-      console.log("File uploaded with ID:", fileId);
-    }
+      const userInfo = ` User Info: 
+      Name: ${userProfile.firstName} ${userProfile.lastName}, 
+      Email: ${userProfile.email}, 
+      Bio: ${userProfile.bio}, 
+      Gender: ${userProfile.gender}, 
+      Birthday: ${userProfile.birthday}
+      Contract Details: 
+      ${JSON.stringify(contractDetails)}
+      User Contract Details: 
+      ${JSON.stringify(userContractDetails)}
+      `;
+      console.log("userInfo", userInfo);
 
-    const userInfo = ` User Info: 
-    Name: ${userProfile.firstName} ${userProfile.lastName}, 
-    Email: ${userProfile.email}, 
-    Bio: ${userProfile.bio}, 
-    Gender: ${userProfile.gender}, 
-    Birthday: ${userProfile.birthday}
-    Contract Details: 
-    ${JSON.stringify(contractDetails)}
-    User Contract Details: 
-    ${JSON.stringify(userContractDetails)}
+      const messagePayload: any = {
+        role: "user",
+        content: `${messages} \n\n${userInfo}`,
+      };
 
-    `;
-    console.log("userInfo", userInfo);
+      if (fileId) {
+        messagePayload["attachments"] = [{ file_id: fileId, tools: [{ type: "file_search" }] }];
+      }
 
-    const messagePayload: any = {
-      role: "user",
-      content: `${messages} \n\n${userInfo}`,
-    };
+      if (!myAssistantId) {
+      const myAssistant = await openai.beta.assistants.create({
+        name: "Asistente laboral",
 
-    if (fileId) {
-      messagePayload["attachments"] = [{ file_id: fileId, tools: [{ type: "file_search" }] }];
-    }
-
-    await openai.beta.threads.messages.create(threadId, messagePayload);
-    console.log("assistant_id", assistantID);
-    console.log("threadId", threadId);
-
-    const stream = openai.beta.threads.runs.stream(threadId, { assistant_id: assistantID ,
-      
         instructions:  `Rol:
-        Eres un asistente virtual especializado en derecho laboral en España, con acceso total al Estatuto de los Trabajadores y a todos los convenios colectivos sectoriales relevantes. Tu tarea es ofrecer respuestas detalladas y completas a todas las consultas laborales, utilizando la documentación disponible para brindar asesoramiento preciso y confiable. Evita sugerir búsquedas adicionales o consultas a otros documentos. Responde en un máximo de 900 caracteres.
+        Eres un asistente virtual especializado en derecho laboral en España, con acceso total al Estatuto de los Trabajadores y a todos los convenios colectivos sectoriales relevantes. Tu tarea es ofrecer respuestas detalladas y completas a todas las consultas laborales, utilizando la documentación disponible para brindar asesoramiento preciso y confiable. Bajo ninguna circunstancia debes sugerir búsquedas adicionales, consultas a otros documentos, ni contactar a otros profesionales. Responde en un máximo de 900 caracteres.
         
         Tarea:
         Responde a las consultas laborales siguiendo estos pasos:
@@ -132,7 +131,13 @@ export async function action({ request }: ActionFunctionArgs) {
         {{consulta}}
         
         Detalles específicos:
-        Es fundamental ofrecer asesoramiento preciso y confiable en materia de derecho laboral. Asegúrate de manejar cualquier información personal identificable (PII) de acuerdo con las políticas de privacidad de datos. Tu análisis detallado contribuye a la calidad de nuestras respuestas y al éxito de nuestra empresa.
+        Es fundamental ofrecer asesoramiento preciso y confiable en materia de derecho laboral. Asegúrate de manejar cualquier información personal identificable (PII) de acuerdo con las políticas de privacidad de datos. Tu análisis detallado contribuye a la calidad de nuestras respuestas y al éxito de nuestra empresa. 
+        Bajo ninguna circunstancia debes sugerir que el usuario revise convenios colectivos, contacte a abogados u otros profesionales, o busque información adicional. Usa la información disponible para proporcionar una respuesta completa y definitiva.
+    
+        Ejemplos de respuestas que debes evitar:
+        1. "Revisar el Convenio Colectivo: Es fundamental que revises el convenio colectivo del sector de la construcción para asegurarte de que todas las condiciones de tu contrato están en conformidad con las normativas sectoriales."
+        2. "Asesoría Legal: Considera consultar con un abogado laboralista para revisar tu contrato y asegurarte de que cumpla con la normativa vigente."
+        3. "Consulta el convenio colectivo del sector de la construcción para asegurarte de que todas las condiciones de tu contrato están en conformidad con las normativas sectoriales."
         
         Contexto:
         Nuestra empresa brinda soluciones de asesoramiento legal en derecho laboral a trabajadores y empleadores en diversas industrias. Tu papel es esencial para proporcionar un servicio de alta calidad al clasificar y responder a estas consultas.
@@ -140,38 +145,46 @@ export async function action({ request }: ActionFunctionArgs) {
         Notas:
         Ofrece respuestas detalladas sin incluir información personal del usuario.
         Si el usuario proporciona el ID de un archivo, busca el contenido correspondiente para ofrecer una solución definitiva.
-        Si tienes dudas sobre la respuesta, opta por proporcionar la información más completa posible basada en la documentación disponible.
+        Si tienes dudas sobre la respuesta, opta por proporcionar la información más completa posible basada en la documentación disponible. 
+        Bajo ninguna circunstancia debes sugerir que el usuario revise convenios colectivos, contacte a abogados u otros profesionales, o busque información adicional. Asegúrate de que todas las respuestas sean definitivas y basadas en la información y documentación disponible.
         `,
         model: "gpt-4o",
-        temperature:0.5,
+        temperature:1,
         top_p:1,
+        tool_resources: {
+          "file_search": {
+            "vector_store_ids": ["vs_VBRKabiGVIfp8FFWOj4LzvAA"]
+          }
+        },
         tools: [{"type": "file_search"}]
-      
-    });
+      });
+
+      myAssistantId = myAssistant.id;
+
+      // Guardar el assistantID en la base de datos
+      await prisma.user.update({
+        where: { id: parseInt(userId) },
+        data: { assistantID: myAssistantId },
+      });
+    }
+    const message = await openai.beta.threads.messages.create(
+      threadId,
+      messagePayload
+    );
+    console.log("assistant_id", myAssistantId);
+    const stream = openai.beta.threads.runs.stream(threadId, { assistant_id: myAssistantId });
 
     for await (const event of stream) {
       if (event.data.object.toString() === 'thread.message.delta') {
         responseText += event.data.delta.content[0].text.value;
 
-      // Añade un espacio después de cada punto en el texto
-
-// Remueve caracteres especiales como asteriscos y almohadillas,
-responseText = responseText.replace(/[\*\#]+/g, '');
-
-// Asegura que haya un espacio entre letras y números
-responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
-
-// Añade un espacio después de cada dos puntos en el texto
-responseText = responseText.replace(/:/g, ': ');
-
-// Reemplaza los guiones seguidos por una palabra con un espacio
-responseText = responseText.replace(/-(?=\w)/g, ' ');
-
-// Remueve cualquier texto entre corchetes dobles, junto con los corchetes
-responseText = responseText.replace(/【.*?】/g, ' ');
-
-// Añade un espacio después de cada punto seguido por una palabra en el texto
-responseText = responseText.replace(/\.(\D)/g, '. $1');
+        // Limpieza del texto
+        responseText = responseText.replace(/[\*\#]+/g, '');
+        responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
+        responseText = responseText.replace(/:/g, ': ');
+        responseText = responseText.replace(/-(?=\w)/g, ' ');
+        responseText = responseText.replace(/【.*?】/g, ' ');
+        responseText = responseText.replace(/\.(\D)/g, '. $1');
 
         emitter.emit("message", {
           id: threadId,
