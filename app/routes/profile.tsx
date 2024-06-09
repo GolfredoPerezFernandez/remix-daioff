@@ -1,25 +1,41 @@
-import { useActionData, useLoaderData } from "@remix-run/react";
-import { ActionFunction, LoaderFunction, json, redirect } from "@remix-run/server-runtime";
+import { useActionData, useLoaderData, Form } from "@remix-run/react";
 import { useState } from "react";
+import { json, redirect } from "@remix-run/node";
 import { getEmail, getUserProfile, saveProfile } from "~/utils/queries.server";
+import { handleFileUpload } from "~/utils/server";
 
-export const action: ActionFunction = async ({ request }) => {
+const defaultAvatarUrl = "https://res.cloudinary.com/dug5cohaj/image/upload/v1715526626/dgoztmlvittkhvldpkpr.png";
+
+const cities = [
+  "Barcelona", "Madrid", "Sevilla", "Valencia", "Zaragoza", "Málaga", "Murcia", 
+  "Palma", "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", 
+  "Vitoria", "Granada", "Oviedo", "Santa Cruz de Tenerife", "Pamplona", 
+  "Almería", "San Sebastián"
+];
+
+export const action = async ({ request }) => {
   const formData = await request.formData();
-
   const email = await getEmail(request);
   const firstName = formData.get("firstName");
   const lastName = formData.get("lastName");
   const bio = formData.get("bio");
   const gender = formData.get("gender");
   const birthday = formData.get("birthday");
-  const avatar = formData.get("avatar");
   const city = formData.get("city");
 
   if (!email) {
     return json({ success: false, message: "User not found" });
   }
 
-  const updatedUser = await saveProfile(email, firstName, lastName, bio, gender, new Date(birthday), avatar, city);
+  // Handle avatar upload
+  const avatarFile = formData.get("avatarFile");
+  let avatarPath = null;
+  if (avatarFile && avatarFile instanceof File) {
+    avatarPath = await handleFileUpload(avatarFile);
+  }
+
+  // Update user profile with the new avatar path if provided
+  const updatedUser = await saveProfile(email, firstName, lastName, bio, gender, new Date(birthday), avatarPath, city);
   if (!updatedUser) {
     return json({ success: false, message: "User not found or update failed." });
   }
@@ -27,7 +43,7 @@ export const action: ActionFunction = async ({ request }) => {
   return json({ success: true, message: "Profile updated successfully.", user: updatedUser });
 };
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader = async ({ request }) => {
   const user = await getUserProfile(request);
   if (!user) {
     return redirect('/'); // Or redirect to a login page
@@ -41,31 +57,35 @@ export const loader: LoaderFunction = async ({ request }) => {
     gender: user.gender || '',
     birthday: user.birthday ? new Date(user.birthday).toISOString().split('T')[0] : '',
     city: user.city || '',
+    avatar: user.avatar || '', // Pass the avatar path to the client
   });
 };
-
-const cities = [
-  "Barcelona", "Madrid", "Sevilla", "Valencia", "Zaragoza", "Málaga", "Murcia", 
-  "Palma", "Las Palmas", "Bilbao", "Alicante", "Córdoba", "Valladolid", 
-  "Vitoria", "Granada", "Oviedo", "Santa Cruz de Tenerife", "Pamplona", 
-  "Almería", "San Sebastián"
-];
 
 export default function Profile() {
   const actionData = useActionData();
   const loaderData = useLoaderData();
   const [formData, setFormData] = useState({
-    firstName: actionData?.fields?.firstName || loaderData.firstName,
-    lastName: actionData?.fields?.lastName || loaderData.lastName,
-    gender: actionData?.fields?.gender || loaderData.gender,
-    birthday: actionData?.fields?.birthday || loaderData.birthday,
-    bio: actionData?.fields?.bio || loaderData.bio,
-    city: actionData?.fields?.city || loaderData.city
+    firstName: actionData?.user?.firstName || loaderData.firstName,
+    lastName: actionData?.user?.lastName || loaderData.lastName,
+    gender: actionData?.user?.gender || loaderData.gender,
+    birthday: actionData?.user?.birthday || loaderData.birthday,
+    bio: actionData?.user?.bio || loaderData.bio,
+    city: actionData?.user?.city || loaderData.city,
+    avatar: actionData?.user?.avatar || loaderData.avatar || defaultAvatarUrl
   });
 
   const handleInputChange = (event, field) => {
     let value = event.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      setFormData(prev => ({ ...prev, avatarFile: file, avatar: URL.createObjectURL(file) }));
+    } else {
+      alert("Please upload a valid image file.");
+    }
   };
 
   return (
@@ -80,7 +100,7 @@ export default function Profile() {
               Administra tu nombre, contraseña y configuración de cuenta.
             </p>
           </div>
-          <form method="POST">
+          <Form method="post" encType="multipart/form-data">
             <div className="grid sm:grid-cols-12 gap-2 sm:gap-6">
               <div className="sm:col-span-3">
                 <label className="inline-block text-sm text-gray-800 mt-2.5 dark:text-neutral-200">
@@ -89,13 +109,14 @@ export default function Profile() {
               </div>
               <div className="sm:col-span-9">
                 <div className="flex items-center gap-5">
-                  <img className="inline-block size-16 rounded-full ring-2 ring-white dark:ring-neutral-900" src="https://res.cloudinary.com/dug5cohaj/image/upload/v1715526626/dgoztmlvittkhvldpkpr.png" alt="Descripción de la imagen"/>
+                  <img className="inline-block size-16 rounded-full ring-2 ring-white dark:ring-neutral-900" src={formData.avatar} alt="Avatar"/>
                   <div className="flex gap-x-2">
                     <div>
-                      <button type="button" className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800">
+                      <label htmlFor="avatarFile" className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800">
                         <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         Subir foto
-                      </button>
+                      </label>
+                      <input id="avatarFile" type="file" name="avatarFile" onChange={handleFileChange} className="hidden" />
                     </div>
                   </div>
                 </div>
@@ -173,7 +194,7 @@ export default function Profile() {
                 Guardar cambios
               </button>
             </div>
-          </form>
+          </Form>
         </div>
       </div>
     </div>
