@@ -31,7 +31,7 @@ console.log("user.threadId "+user.threadId)
     const threadMessages = await openai.beta.threads.messages.list(user.threadId);
 
     return json({
-      messages: threadMessages.data,
+      messages: threadMessages.data.reverse(),
     
     });
   } catch (error) {

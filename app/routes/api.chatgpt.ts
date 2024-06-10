@@ -62,6 +62,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
     console.log("user :", JSON.stringify(user));
    // let myAssistantId = "asst_svjIMVKs8nHko600LkawLBRn";
+   
+   let baseVector = "vs_VBRKabiGVIfp8FFWOj4LzvAA";
 
   let myAssistantId = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
     let fileId = '';
@@ -122,10 +124,9 @@ export async function action({ request }: ActionFunctionArgs) {
     ${JSON.stringify(userContractDetails)}
     `;
     console.log("userInfo", userInfo);
-
     let messagePayload: MessageCreateParams = {
       role: "user",
-      content: fileId ? `Responde preguntas basadas en el documento ${ fileId} proporcionado. ${messages} \n\n${userInfo}` : `${messages} \n\n${userInfo}`,
+      content: fileId ? `Responde preguntas basadas en el documento ${ fileId} proporcionado. ${messages} ` : `${messages}`,
     };
 
     if (fileId) {
@@ -136,7 +137,6 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       ];
     }
-
     let threadId = user.threadId;
     if (!threadId) {
       const thread = await openai.beta.threads.create();
@@ -152,8 +152,22 @@ export async function action({ request }: ActionFunctionArgs) {
       threadId,
       messagePayload
     );
-    const stream = openai.beta.threads.runs.stream(threadId, { assistant_id: myAssistantId });
-
+    const stream = openai.beta.threads.runs.stream(threadId, { assistant_id: myAssistantId ,    
+        instructions:  ` Información del Usuario:
+        Nombre: ${userProfile.firstName} ${userProfile.lastName},
+        Correo Electrónico: ${userProfile.email},
+        Biografía: ${userProfile.bio},
+        Género: ${userProfile.gender},
+        Cumpleaños: ${userProfile.birthday}
+        Detalles del Contrato:
+        ${JSON.stringify(contractDetails)}
+        Detalles del Contrato del Usuario:
+        ${JSON.stringify(userContractDetails)}
+        `
+   
+    });
+ 
+  
     for await (const event of stream) {
       if (event.data.object.toString() === 'thread.message.delta') {
         responseText += event.data.delta.content[0].text.value;

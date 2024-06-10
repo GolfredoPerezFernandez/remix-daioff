@@ -21,3 +21,16 @@ export const handleFileUpload = async (avatarFile: File) => {
   }
   return avatarPath;
 };
+
+
+export async function saveUserProfileToFile(userProfile) {
+  const filePath = path.join(__dirname, 'userProfiles', `${userProfile.email}.json`);
+  
+  // Ensure the directory exists
+  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+  
+  // Write the user profile to the file
+  await fs.promises.writeFile(filePath, JSON.stringify(userProfile, null, 2), 'utf8');
+  
+  return filePath;
+}
