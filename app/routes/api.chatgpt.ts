@@ -17,12 +17,10 @@ const __dirname = path.dirname(__filename);
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const messages = formData.get("messages") as string;
-  const assistantID = formData.get("assistantID") as string;
-  let vectorID = formData.get("vectorID") as string || 'default_vector_id';
+  const assistantID = "asst_svjIMVKs8nHko600LkawLBRn";
   const file = formData.get("file") as File;
 
   console.log("Received assistantID:", assistantID);
-  console.log("Received vectorID:", vectorID);
 
   if (file) {
     console.log("Received file:", file.name);
@@ -61,17 +59,14 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     console.log("user :", JSON.stringify(user));
-   // let myAssistantId = "asst_svjIMVKs8nHko600LkawLBRn";
-   
-   let baseVector = "vs_VBRKabiGVIfp8FFWOj4LzvAA";
 
-  let myAssistantId = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
+    let baseVector = "vs_VBRKabiGVIfp8FFWOj4LzvAA";
+    let myAssistantId = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
     let fileId = '';
 
     if (file) {
       try {
-        // Verificación del tipo de archivo y tamaño
-        const allowedFileTypes = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain']; // Ejemplo de tipos permitidos
+        const allowedFileTypes = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'];
         const maxSize = 10 * 1024 * 1024; // 10 MB
 
         if (!allowedFileTypes.includes(file.type)) {
@@ -88,7 +83,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
         fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
 
-        // Verificación de que el archivo se haya escrito correctamente
         if (!fs.existsSync(filePath)) {
           return json({ error: 'Failed to write file to disk' }, { status: 500 });
         }
@@ -100,7 +94,6 @@ export async function action({ request }: ActionFunctionArgs) {
         });
         fileId = fileUploadResponse.id;
 
-        // Verificación de que el archivo se haya subido correctamente a OpenAI
         if (!fileId) {
           return json({ error: 'Failed to upload file to OpenAI' }, { status: 500 });
         }
@@ -124,19 +117,24 @@ export async function action({ request }: ActionFunctionArgs) {
     ${JSON.stringify(userContractDetails)}
     `;
     console.log("userInfo", userInfo);
+
     let messagePayload: MessageCreateParams = {
       role: "user",
-      content: fileId ? `Responde preguntas basadas en el documento ${ fileId} proporcionado. ${messages} ` : `${messages}`,
+      content: `${messages}`,
     };
 
     if (fileId) {
-      messagePayload.attachments = [
+      messagePayload.content = [
+        { "type": "text", "text": `${messages}` },
         {
-          file_id: fileId,
-          tools: [{ type: "file_search" }],
-        },
+          type: 'image_file',
+          image_file: {
+            file_id: fileId,
+          },
+        }
       ];
     }
+
     let threadId = user.threadId;
     if (!threadId) {
       const thread = await openai.beta.threads.create();
@@ -148,32 +146,32 @@ export async function action({ request }: ActionFunctionArgs) {
         data: { threadId: threadId },
       });
     }
-   await openai.beta.threads.messages.create(
+
+    await openai.beta.threads.messages.create(
       threadId,
       messagePayload
     );
-    const stream = openai.beta.threads.runs.stream(threadId, { assistant_id: myAssistantId ,    
-        instructions:  ` Información del Usuario:
-        Nombre: ${userProfile.firstName} ${userProfile.lastName},
-        Correo Electrónico: ${userProfile.email},
-        Biografía: ${userProfile.bio},
-        Género: ${userProfile.gender},
-        Cumpleaños: ${userProfile.birthday}
-        Detalles del Contrato:
-        ${JSON.stringify(contractDetails)}
-        Detalles del Contrato del Usuario:
-        ${JSON.stringify(userContractDetails)}
-        `
-   
+
+    const stream = openai.beta.threads.runs.stream(threadId, {
+      assistant_id: myAssistantId,
+      instructions: ` Información del Usuario:
+      Nombre: ${userProfile.firstName} ${userProfile.lastName},
+      Correo Electrónico: ${userProfile.email},
+      Biografía: ${userProfile.bio},
+      Género: ${userProfile.gender},
+      Cumpleaños: ${userProfile.birthday}
+      Detalles del Contrato:
+      ${JSON.stringify(contractDetails)}
+      Detalles del Contrato del Usuario:
+      ${JSON.stringify(userContractDetails)}
+      `
     });
- 
-  
+
     for await (const event of stream) {
       if (event.data.object.toString() === 'thread.message.delta') {
         responseText += event.data.delta.content[0].text.value;
 
-        // Limpieza del texto
-        responseText = responseText.replace(/[\*\#]+/g, '');
+      responseText = responseText.replace(/[\*\#]+/g, '');
         responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
         responseText = responseText.replace(/:/g, ': ');
         responseText = responseText.replace(/-(?=\w)/g, ' ');

@@ -49,7 +49,8 @@ export default function Assistant() {
   let statsIntervalId;
   let videoIsPlaying;
   let lastBytesReceived;
-
+let newStreamId;
+let newSessionId;
   const [connected, setConnected] = useState(false);
   const [iniciando, setIniciando] = useState(false);
   const [isLoading, setLoading] = useState(false);
@@ -390,12 +391,15 @@ export default function Assistant() {
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
-    if (file) {
+    if (file && file.type.startsWith("image/")) {
       setFile(file);
       setFilePreview(URL.createObjectURL(file));
       setFileName(file.name);
+    } else {
+      alert("Please upload a valid image file.");
     }
   };
+
 
   const handleKeyUp = (event) => {
     if (event.key === 'Enter') {
@@ -512,23 +516,41 @@ export default function Assistant() {
                 </button>
               </div>
               <div className="flex items-center space-x-2">
-                {!file && (
-                  <label htmlFor="file-input" className="inline-flex items-center justify-center p-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-200 focus:outline-none focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600 cursor-pointer">
-                    <span className="mr-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </span>
-                    Subir Archivo
-                  </label>
-                )}
-                <input
-                  id="file-input"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={isLoading}
-                />
+              {!file && (
+  <label htmlFor="file-input" className="inline-flex items-center justify-center p-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-200 focus:outline-none focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600 cursor-pointer">
+    <span className="mr-2">
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+    </span>
+    Subir Archivo
+  </label>
+)}
+
+<input
+  id="file-input"
+  type="file"
+  onChange={handleFileChange}
+  className="hidden"
+  disabled={isLoading}
+/>
+
+{file && (
+  <div className="flex items-center space-x-2">
+    <span className="text-sm text-gray-700 dark:text-neutral-400">{fileName || 'Archivo cargado'}</span>
+    <button
+      type="button"
+      onClick={() => {
+        setFile(null);
+        setFilePreview(null);
+        setFileName('');
+      }}
+      className="inline-flex justify-center items-center p-1 bg-red-600 text-white rounded-full hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+    >
+      <FaTrash className="w-4 h-4" />
+    </button>
+  </div>
+)}
                 <button
                   onClick={handleSendMessage}
                   type="button"
