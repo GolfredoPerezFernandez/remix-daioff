@@ -85,7 +85,7 @@ export default function ContractDetails() {
                 name="profession"
                 value={contractDetails.profession || ''}
                 onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
               >
                 <option value="">Seleccione una profesión</option>
                 {typesValues3.map((option) => (
@@ -102,7 +102,7 @@ export default function ContractDetails() {
                 name="community"
                 value={contractDetails.community || ''}
                 onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
               >
                 <option value="">Seleccione una comunidad</option>
                 {Object.keys(provincesByCommunity).map((community) => (
@@ -119,7 +119,7 @@ export default function ContractDetails() {
                 name="province"
                 value={contractDetails.province || ''}
                 onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
               >
                 <option value="">Seleccione una provincia</option>
                 {provinces.map((province) => (
@@ -137,14 +137,14 @@ export default function ContractDetails() {
                 name="address"
                 value={contractDetails.address || ''}
                 onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
               />
             </div>
 
             <div className="mt-5 flex justify-end gap-x-2">
               <button
                 type="submit"
-                className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none"
               >
                 Guardar Cambios
               </button>

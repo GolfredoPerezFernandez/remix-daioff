@@ -129,8 +129,8 @@ export default function Profile() {
               </div>
               <div className="sm:col-span-9">
                 <div className="sm:flex">
-                  <input type="text" name="firstName" value={formData.firstName} onChange={e => handleInputChange(e, 'firstName')} className="py-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" placeholder="Nombre"/>
-                  <input type="text" name="lastName" value={formData.lastName} onChange={e => handleInputChange(e, 'lastName')} className="py-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" placeholder="Apellido"/>
+                  <input type="text" name="firstName" value={formData.firstName} onChange={e => handleInputChange(e, 'firstName')} className="py-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" placeholder="Nombre"/>
+                  <input type="text" name="lastName" value={formData.lastName} onChange={e => handleInputChange(e, 'lastName')} className="py-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" placeholder="Apellido"/>
                 </div>
               </div>
 
@@ -140,7 +140,7 @@ export default function Profile() {
                 </label>
               </div>
               <div className="sm:col-span-9">
-                <select name="city" value={formData.city} onChange={e => handleInputChange(e, 'city')} className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                <select name="city" value={formData.city} onChange={e => handleInputChange(e, 'city')} className="py-2 mt-2 px-3 block w-full border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
                   <option value="">Seleccione una ciudad</option>
                   {cities.map(city => (
                     <option key={city} value={city}>{city}</option>
@@ -155,16 +155,16 @@ export default function Profile() {
               </div>
               <div className="sm:col-span-9">
                 <div className="sm:flex">
-                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
-                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="hombre" checked={formData.gender === 'hombre'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" />
+                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="hombre" checked={formData.gender === 'hombre'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-red-500 dark:checked:border-red-500 dark:focus:ring-offset-gray-800" />
                     <span className="text-sm text-gray-500 ms-3 dark:text-neutral-400">Hombre</span>
                   </label>
-                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
-                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="mujer" checked={formData.gender === 'mujer'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" />
+                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="mujer" checked={formData.gender === 'mujer'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-red-500 dark:checked:border-red-500 dark:focus:ring-offset-gray-800" />
                     <span className="text-sm text-gray-500 ms-3 dark:text-neutral-400">Mujer</span>
                   </label>
-                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
-                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="noBinario" checked={formData.gender === 'noBinario'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" />
+                  <label className="flex py-2 px-3 w-full border border-gray-200 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600">
+                    <input name="gender" onChange={e => handleInputChange(e, 'gender')} value="noBinario" checked={formData.gender === 'noBinario'} type="radio" className="shrink-0 mt-0.5 border-gray-300 rounded-full text-red-600 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-500 dark:checked:bg-red-500 dark:checked:border-red-500 dark:focus:ring-offset-gray-800" />
                     <span className="text-sm text-gray-500 ms-3 dark:text-neutral-400">No Binario</span>
                   </label>
                 </div>
@@ -176,7 +176,7 @@ export default function Profile() {
                 </label>
               </div>
               <div className="sm:col-span-9">
-                <textarea name="bio" value={formData.bio} onChange={e => handleInputChange(e, 'bio')} className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" rows="6" placeholder="Escribe tu biografía..."></textarea>
+                <textarea name="bio" value={formData.bio} onChange={e => handleInputChange(e, 'bio')} className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" rows="6" placeholder="Escribe tu biografía..."></textarea>
               </div>
 
               <div className="sm:col-span-3">
@@ -185,12 +185,12 @@ export default function Profile() {
                 </label>
               </div>
               <div className="sm:col-span-9">
-                <input name="birthday" value={formData.birthday} onChange={e => handleInputChange(e, 'birthday')} aria-label="Fecha" type="date" className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" />
+                <input name="birthday" value={formData.birthday} onChange={e => handleInputChange(e, 'birthday')} aria-label="Fecha" type="date" className="py-2 px-3 block w-full border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" />
               </div>
             </div>
 
             <div className="mt-5 flex justify-end gap-x-2">
-              <button type="submit" className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none">
+              <button type="submit" className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none">
                 Guardar cambios
               </button>
             </div>

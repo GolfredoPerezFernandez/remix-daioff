@@ -27,12 +27,11 @@ export const loader = async ({ request }) => {
     if (!user || !user.threadId) {
       return json({ error: 'No thread ID found for user' }, { status: 404 });
     }
-console.log("user.threadId "+user.threadId)
+
     const threadMessages = await openai.beta.threads.messages.list(user.threadId);
 
     return json({
       messages: threadMessages.data.reverse(),
-    
     });
   } catch (error) {
     console.error('Error fetching thread messages:', error);
@@ -49,8 +48,7 @@ export default function Assistant() {
   let statsIntervalId;
   let videoIsPlaying;
   let lastBytesReceived;
-let newStreamId;
-let newSessionId;
+  let newStreamId;
   const [connected, setConnected] = useState(false);
   const [iniciando, setIniciando] = useState(false);
   const [isLoading, setLoading] = useState(false);
@@ -83,7 +81,7 @@ let newSessionId;
     }
   }
 
-  const liveResponse = useEventSource(`https://daioff.fly.dev/api/subscribe`, { event: "new-message" });
+  const liveResponse = useEventSource(`http://localhost:3000/api/subscribe`, { event: "new-message" });
 
   function stopAllStreams() {
     const videoElement = document.getElementById('talk-video');
@@ -128,15 +126,15 @@ let newSessionId;
           candidate,
           sdpMid,
           sdpMLineIndex,
-          session_id: sessionId,
+          session_id: varsessionId,
         }),
       });
     }
   }
 
-  function setVideoElement(stream) {
+  function setVideoElement(stream: any) {
     if (!stream) return;
-    const videoElement = document.getElementById('talk-video');
+    const videoElement = document.getElementById('talk-video') as HTMLVideoElement;
     if (videoElement) {
       videoElement.srcObject = stream;
       videoElement.loop = false;
@@ -148,7 +146,7 @@ let newSessionId;
   }
 
   function playIdleVideo() {
-    const videoElement = document.getElementById('talk-video');
+    const videoElement = document.getElementById('talk-video') as HTMLVideoElement;
     if (videoElement) {
       videoElement.srcObject = null;
       videoElement.src = 'https://res.cloudinary.com/dug5cohaj/video/upload/v1715359344/uuhctl9z96dea222j08b.mp4';
@@ -175,7 +173,7 @@ let newSessionId;
     // Implementar lógica si es necesario
   }
 
-  function onVideoStatusChange(videoIsPlaying, stream) {
+  function onVideoStatusChange(videoIsPlaying: any, stream: any) {
     let status;
     if (videoIsPlaying) {
       status = 'streaming';
@@ -187,14 +185,13 @@ let newSessionId;
       playIdleVideo();
     }
   }
-
-  function onTrack(event) {
+  function onTrack(event: any) {
     if (!event.track) return;
 
     statsIntervalId = setInterval(async () => {
       const stats = await peerConnection.getStats(event.track);
       let videoIsPlayingUpdated = false;
-      stats.forEach((report) => {
+      stats.forEach((report: any) => {
         if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
           if (videoIsPlaying !== (report.bytesReceived > lastBytesReceived)) {
             videoIsPlaying = report.bytesReceived > lastBytesReceived;
@@ -209,9 +206,9 @@ let newSessionId;
     }, 500);
   }
 
-  async function createPeerConnection(offer, iceServers) {
+  async function createPeerConnection(offer: any, iceServers: any) {
     if (!peerConnection) {
-      const RTCPeerConnection = (
+      const RTCPeerConnection: any = (
         window.RTCPeerConnection ||
         window.RTCPeerConnection
       ).bind(window);
@@ -237,8 +234,9 @@ let newSessionId;
     return sessionClientAnswer;
   }
 
-  const [streamId,setNewStream]=useState(null)
-  const [sessionId,setNewSessionId]=useState(null)
+  const [streamId, setNewStream] = useState(null);
+  const [varsessionId, setNewSessionId] = useState(null);
+  let newSessionId = ""
 
   useEffect(() => {
     async function connectionInit() {
@@ -260,14 +258,15 @@ let newSessionId;
           }),
         });
 
-        const { id: newStreamId, offer, ice_servers: iceServers, session_id: newsessionId } = await sessionResponse.json();
-  
-        setNewStream(newStreamId);
+        const { id: newStreamId2, offer, ice_servers: iceServers, session_id: newsessionId } = await sessionResponse.json();
+        newSessionId = newsessionId;
+        newStreamId = newStreamId2;
+
+        setNewStream(newStreamId2);
         setNewSessionId(newsessionId);
         sessionClientAnswer = await createPeerConnection(offer, iceServers);
         setConnected(true);
         setIniciando(false);
-
       } catch (e) {
         console.log('error during streaming setup', e);
         stopAllStreams();
@@ -280,7 +279,7 @@ let newSessionId;
       await fetch(`${DID_API.url}/talks/streams/${streamId}/sdp`, {
         method: 'POST',
         headers: { Authorization: `Basic ${DID_API.key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answer: sessionClientAnswer, session_id: sessionId })
+        body: JSON.stringify({ answer: sessionClientAnswer, session_id: varsessionId })
       });
     }
 
@@ -316,14 +315,14 @@ let newSessionId;
     async function sendResponseToDID(responseText) {
       let providerList = { type: 'microsoft', voice_id: 'es-ES-AbrilNeural' };
       try {
-        const talkResponse = await fetch(`${DID_API.url}/talks/streams/${newStreamId}`, {
+        const talkResponse = await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
           method: 'POST',
           headers: {
             Authorization: `Basic ${DID_API.key}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            session_id: newSessionId,
+            session_id: varsessionId,
             script: {
               type: 'text',
               subtitles: 'false',
@@ -391,15 +390,18 @@ let newSessionId;
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file) {
       setFile(file);
-      setFilePreview(URL.createObjectURL(file));
+      if (file.type.startsWith("image/")) {
+        setFilePreview(URL.createObjectURL(file));
+      } else {
+        setFilePreview(null);
+      }
       setFileName(file.name);
     } else {
-      alert("Please upload a valid image file.");
+      alert("Please upload a valid file.");
     }
   };
-
 
   const handleKeyUp = (event) => {
     if (event.key === 'Enter') {
@@ -438,13 +440,29 @@ let newSessionId;
   };
 
   function cleanText(text) {
-    text = text.replace(/[\*\#]+/g, '');
-    text = text.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
-    text = text.replace(/:/g, ': ');
-    text = text.replace(/-(?=\w)/g, ' ');
-    text = text.replace(/【.*?】/g, ' ');
-    text = text.replace(/\.(\D)/g, '. $1');
-    return text;
+    let responseText = text;
+    responseText = responseText.replace(/\\frac{(\d+)}{(\d+)}/g, '($1/$2)');
+    responseText = responseText.replace(/\\times/g, 'x');
+    responseText = responseText.replace(/\\left/g, '(');
+    responseText = responseText.replace(/\\right/g, ')');
+    responseText = responseText.replace(/\\text{(\w+)}/g, '$1');
+    responseText = responseText.replace(/\\\[/g, '');
+    responseText = responseText.replace(/\\\]/g, '');
+    responseText = responseText.replace(/\\\(/g, '');
+    responseText = responseText.replace(/\\\)/g, '');
+    responseText = responseText.replace(/\\frac{(\d+)}{(\d+)}/g, '$1/$2');
+    responseText = responseText.replace(/\\approx/g, '≈');
+    responseText = responseText.replace(/\\text{(.*?)}/g, '$1'); // Nueva regla para eliminar \text{}
+    responseText = responseText.replace(/\\mathbf{(.*?)}/g, '$1'); // Nueva regla para eliminar \mathbf{}
+    responseText = responseText.replace(/\\frac{(\d+)}{(\d+)}/g, '($1/$2)');
+    responseText = responseText.replace(/\\\(/g, '(');
+    responseText = responseText.replace(/\\\)/g, ')');
+    responseText = responseText.replace(/\\días/g, ' días');
+    responseText = responseText.replace(/\\EUR/g, ' EUR');
+    responseText = responseText.replace(/\\times/g, 'x'); // Reemplaza \times con x
+    responseText = responseText.replace(/\\,€/g, '€'); // Elimina \, antes del símbolo de euro
+    responseText = responseText.replace(/\\/g, '');
+    return responseText;
   }
 
   return (
@@ -455,27 +473,26 @@ let newSessionId;
             Bienvenido a DAIOFF
           </h1>
           <p className="mt-3 text-black dark:text-neutral-400">
-            Tu asesor laboral
+            Tu Asesor laboral
           </p>
         </div>
         <ul className="mt-16 space-y-5 pl-10 pr-10 pb-32">
           {history.map((message, index) => (
-            <li key={index} className={`max-w-4xl py-2 px-4 sm:px-6 lg:px-8 mx-auto flex gap-x-2 sm:gap-x-4 ${message.role === 'assistant' ? 'bg-blue-50' : 'bg-gray-100'} rounded-lg`}>
-              <svg className="flex-shrink-0 w-[2.375rem] h-[2.375rem] rounded-full" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="38" height="38" rx="6" fill="#2563EB" />
-                <path d="M10 28V18.64C10 13.8683 14.0294 10 19 10C23.9706 10 28 13.8683 28 18.64C28 23.4117 23.9706 27.28 19 27.28H18.25" stroke="white" strokeWidth="1.5" />
-                <path d="M13 28V18.7552C13 15.5104 15.6863 12.88 19 12.88C22.3137 12.88 25 15.5104 25 18.7552C25 22 22.3137 24.6304 19 24.6304H18.25" stroke="white" strokeWidth="1.5" />
-                <ellipse cx="19" cy="18.6554" rx="3.75" ry="3.6" fill="white" />
-              </svg>
+            <li key={index} className={`max-w-4xl py-2 px-4 sm:px-6 lg:px-8 mx-auto flex gap-x-2 sm:gap-x-4 ${message.role === 'assistant' ? 'bg-red-50' : 'bg-gray-100'} rounded-lg`}>
+              <img
+                className="flex-shrink-0 w-[2.375rem] h-[2.375rem] rounded-full"
+                src="https://res.cloudinary.com/dug5cohaj/image/upload/v1718986474/p655in8iogyauqluyumo.png"
+                alt="Avatar"
+              />
               <div className="grow mt-2 space-y-3">
                 {Array.isArray(message.content) ? message.content.map((contentItem, idx) => (
-                  <p key={idx} className={`text-${message.role === 'assistant' ? 'blue' : 'gray'}-800 dark:text-neutral-200`}>
+                  <p key={idx} className={`text-${message.role === 'assistant' ? 'red' : 'gray'}-800 dark:text-neutral-200`}>
                     {contentItem.text && contentItem.text.value && contentItem.text.value.split('\n').map((line, idx) => (
                       <span key={idx} className="block">{cleanText(line)}</span>
                     ))}
                   </p>
                 )) : (
-                  <p className={`text-${message.role === 'assistant' ? 'blue' : 'gray'}-800 dark:text-neutral-200`}>
+                  <p className={`text-${message.role === 'assistant' ? 'red' : 'gray'}-800 dark:text-neutral-200`}>
                     {message.content && typeof message.content === 'string' && message.content.split('\n').map((line, idx) => (
                       <span key={idx} className="block">{cleanText(line)}</span>
                     ))}
@@ -490,19 +507,19 @@ let newSessionId;
       <footer className="max-w-4xl mx-auto fixed bottom-0 left-0 right-0 z-10 p-0 sm:py-6">
         <div className="relative ml-4 flex justify-between items-end gap-4 lg:pl-48">
           <video id="talk-video" width="150px" height="150px" autoPlay={true} muted={muteVideo} className="flex-shrink-0 bg-gray-200 rounded-md dark:bg-neutral-700"></video>
-        
+
           <div className="flex-1 flex flex-col">
             <textarea
               value={userInput}
               onChange={handleUserMessage}
               onKeyUp={handleKeyUp}
-              className="p-4 pb-12 block w-full bg-gray-100 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-              placeholder="Ask me anything..."
+              className="p-4 pb-12 block w-full bg-gray-100 border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+              placeholder="Haz una pregunta..."
               disabled={isLoading}
             ></textarea>
             <div className="flex justify-between mt-1 gap-2">
               <div className="flex items-center space-x-2">
-                <button onClick={toggleMuteVideo} className="inline-flex flex-shrink-0 justify-center items-center size-8 rounded-lg text-white bg-blue-600 hover:bg-blue-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onClick={toggleMuteVideo} className="inline-flex flex-shrink-0 justify-center items-center size-8 rounded-lg text-white bg-red-600 hover:bg-red-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-red-500">
                   {muteVideo ? <FaVolumeMute /> : <FaVolumeUp />}
                 </button>
                 <button
@@ -516,46 +533,46 @@ let newSessionId;
                 </button>
               </div>
               <div className="flex items-center space-x-2">
-              {!file && (
-  <label htmlFor="file-input" className="inline-flex items-center justify-center p-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-200 focus:outline-none focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600 cursor-pointer">
-    <span className="mr-2">
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-      </svg>
-    </span>
-    Subir Archivo
-  </label>
-)}
+                {!file && (
+                  <label htmlFor="file-input" className="inline-flex items-center justify-center p-2 bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-200 focus:outline-none focus:border-red-500 focus:ring-red-500 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600 cursor-pointer">
+                    <span className="mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </span>
+                    Subir Archivo
+                  </label>
+                )}
 
-<input
-  id="file-input"
-  type="file"
-  onChange={handleFileChange}
-  className="hidden"
-  disabled={isLoading}
-/>
+                <input
+                  id="file-input"
+                  type="file"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={isLoading}
+                />
 
-{file && (
-  <div className="flex items-center space-x-2">
-    <span className="text-sm text-gray-700 dark:text-neutral-400">{fileName || 'Archivo cargado'}</span>
-    <button
-      type="button"
-      onClick={() => {
-        setFile(null);
-        setFilePreview(null);
-        setFileName('');
-      }}
-      className="inline-flex justify-center items-center p-1 bg-red-600 text-white rounded-full hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-    >
-      <FaTrash className="w-4 h-4" />
-    </button>
-  </div>
-)}
+                {file && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700 dark:text-neutral-400">{fileName || 'Archivo cargado'}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFile(null);
+                        setFilePreview(null);
+                        setFileName('');
+                      }}
+                      className="inline-flex justify-center items-center p-1 bg-red-600 text-white rounded-full hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <FaTrash className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={handleSendMessage}
                   type="button"
                   id="talk-button"
-                  className="inline-flex flex-shrink-0 justify-center items-center size-8 rounded-lg text-white bg-blue-600 hover:bg-blue-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="inline-flex flex-shrink-0 justify-center items-center size-8 rounded-lg text-white bg-red-600 hover:bg-red-500 focus:z-10 focus:outline-none focus:ring-2 focus:ring-red-500"
                   disabled={isLoading}
                 >
                   {isLoading ? (

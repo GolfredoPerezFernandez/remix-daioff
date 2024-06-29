@@ -17,11 +17,10 @@ const __dirname = path.dirname(__filename);
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const messages = formData.get("messages") as string;
-  const assistantID = "asst_svjIMVKs8nHko600LkawLBRn";
   const file = formData.get("file") as File;
+  const assistantID = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
 
   console.log("Received assistantID:", assistantID);
-
   if (file) {
     console.log("Received file:", file.name);
   } else {
@@ -39,11 +38,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const userProfile = await getUserProfile(request);
     const contractDetails = await getUserDetails(request);
     const userContractDetails = await fetchUserContractDetails(request);
-    console.log("contractDetails :", contractDetails);
-    console.log("userContractDetails :", userContractDetails);
-    console.log("userProfile :", userProfile);
-
-    console.log("userId :", JSON.stringify(userId));
+    console.log("contractDetails:", contractDetails);
+    console.log("userContractDetails:", userContractDetails);
+    console.log("userProfile:", userProfile);
+    console.log("userId:", JSON.stringify(userId));
 
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
@@ -58,15 +56,21 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: 'User not found in database' }, { status: 404 });
     }
 
-    console.log("user :", JSON.stringify(user));
+    console.log("user:", JSON.stringify(user));
 
-    let baseVector = "vs_VBRKabiGVIfp8FFWOj4LzvAA";
-    let myAssistantId = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
     let fileId = '';
+    let filePurpose = '';
 
     if (file) {
       try {
-        const allowedFileTypes = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'];
+        const allowedFileTypes = [
+          'application/pdf',
+          'image/jpeg',
+          'image/png',
+          'text/plain',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
         const maxSize = 10 * 1024 * 1024; // 10 MB
 
         if (!allowedFileTypes.includes(file.type)) {
@@ -76,21 +80,28 @@ export async function action({ request }: ActionFunctionArgs) {
           return json({ error: 'File is too large' }, { status: 400 });
         }
 
-        const filePath = path.join(__dirname, 'uploads', file.name);
-        if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
-          fs.mkdirSync(path.join(__dirname, 'uploads'));
+        const uploadsDir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir);
         }
 
+        const filePath = path.join(uploadsDir, file.name);
         fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
 
         if (!fs.existsSync(filePath)) {
           return json({ error: 'Failed to write file to disk' }, { status: 500 });
         }
 
+        if (file.type.startsWith('image/')) {
+          filePurpose = 'vision';
+        } else {
+          filePurpose = 'assistants';
+        }
+
         console.log("Uploading file to OpenAI");
         const fileUploadResponse = await openai.files.create({
           file: fs.createReadStream(filePath),
-          purpose: "assistants",
+          purpose: filePurpose,
         });
         fileId = fileUploadResponse.id;
 
@@ -105,34 +116,27 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    const userInfo = ` User Info: 
-    Name: ${userProfile.firstName} ${userProfile.lastName}, 
-    Email: ${userProfile.email}, 
-    Bio: ${userProfile.bio}, 
-    Gender: ${userProfile.gender}, 
-    Birthday: ${userProfile.birthday}
-    Contract Details: 
-    ${JSON.stringify(contractDetails)}
-    User Contract Details: 
-    ${JSON.stringify(userContractDetails)}
-    `;
-    console.log("userInfo", userInfo);
-
     let messagePayload: MessageCreateParams = {
       role: "user",
-      content: `${messages}`,
+      content: [{ type: "text", text: `${messages}` }],
     };
-
     if (fileId) {
-      messagePayload.content = [
-        { "type": "text", "text": `${messages}` },
-        {
-          type: 'image_file',
-          image_file: {
-            file_id: fileId,
-          },
-        }
-      ];
+      if (filePurpose === 'vision') {
+        messagePayload.content = [
+          { "type": "text", "text": `${messages}` },
+          {
+            type: 'image_file',
+            image_file: {
+              file_id: fileId,
+            },
+          }
+        ];;
+      } else {
+        messagePayload.attachments = [{
+          file_id: fileId,
+          tools: [{ type: "file_search" }]
+        }];
+      }
     }
 
     let threadId = user.threadId;
@@ -153,7 +157,7 @@ export async function action({ request }: ActionFunctionArgs) {
     );
 
     const stream = openai.beta.threads.runs.stream(threadId, {
-      assistant_id: myAssistantId,
+      assistant_id: assistantID,
       instructions: ` Información del Usuario:
       Nombre: ${userProfile.firstName} ${userProfile.lastName},
       Correo Electrónico: ${userProfile.email},
@@ -171,12 +175,34 @@ export async function action({ request }: ActionFunctionArgs) {
       if (event.data.object.toString() === 'thread.message.delta') {
         responseText += event.data.delta.content[0].text.value;
 
-      responseText = responseText.replace(/[\*\#]+/g, '');
+        responseText = responseText.replace(/[\*\#]+/g, '');
         responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
         responseText = responseText.replace(/:/g, ': ');
         responseText = responseText.replace(/-(?=\w)/g, ' ');
         responseText = responseText.replace(/【.*?】/g, ' ');
         responseText = responseText.replace(/\.(\D)/g, '. $1');
+
+        // Reemplaza las fórmulas matemáticas con texto legible
+        responseText = responseText.replace(/\\frac{(\d+)}{(\d+)}/g, '($1/$2)');
+        responseText = responseText.replace(/\\times/g, 'x');
+        responseText = responseText.replace(/\\left/g, '(');
+        responseText = responseText.replace(/\\right/g, ')');
+        responseText = responseText.replace(/\\text{(\w+)}/g, '$1');
+        responseText = responseText.replace(/\\\[/g, '');
+        responseText = responseText.replace(/\\\]/g, '');
+        responseText = responseText.replace(/\\\(/g, '');
+        responseText = responseText.replace(/\\\)/g, '');
+        responseText = responseText.replace(/\\approx/g, '≈');
+        responseText = responseText.replace(/\\text{(.*?)}/g, '$1'); // Nueva regla para eliminar \text{}
+        responseText = responseText.replace(/\\mathbf{(.*?)}/g, '$1'); // Nueva regla para eliminar \mathbf{}
+        responseText = responseText.replace(/\\frac{(\d+)}{(\d+)}/g, '($1/$2)');
+        responseText = responseText.replace(/\\\(/g, '(');
+        responseText = responseText.replace(/\\\)/g, ')');
+        responseText = responseText.replace(/\\días/g, ' días');
+        responseText = responseText.replace(/\\EUR/g, ' EUR');
+        responseText = responseText.replace(/\\times/g, 'x'); // Reemplaza \times con x
+        responseText = responseText.replace(/\\,€/g, '€'); // Elimina \, antes del símbolo de euro
+        responseText = responseText.replace(/\\/g, '');
 
         emitter.emit("message", {
           id: threadId,

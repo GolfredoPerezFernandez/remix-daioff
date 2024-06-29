@@ -18,7 +18,7 @@ export function HeroHighlightDemo() {
           duration: 0.5,
           ease: [0.4, 0.0, 0.2, 1],
         }}
-        className="text-4xl px-4 md:text-6xl lg:text-5xl font-bold text-neutral-700 dark:text-white max-w-4xl leading-relaxed lg:leading-snug text-center"
+        className="text-3xl px-4 md:text-3xl lg:text-4xl font-bold text-neutral-700 dark:text-white max-w-4xl leading-relaxed lg:leading-snug text-center"
       >
         Asistente Virtual Legal Especializado en derecho laboral en España.{" "}
         <Highlight className="text-black dark:text-white">

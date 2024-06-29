@@ -53,7 +53,7 @@ function Navbar({ userId, onMenuClick }: { userId: string | null, onMenuClick: (
           <div className="flex items-center">
             {userId ? (
               <Link to="/logout" className="hidden lg:block text-gray-700 dark:text-neutral-400 px-3 py-2 rounded-md text-sm font-medium">
-                Log Out
+              Desconectarse
               </Link>
             ) : (
               <Link to="/login" className="hidden lg:block text-gray-700 dark:text-neutral-400 px-3 py-2 rounded-md text-sm font-medium">
@@ -117,7 +117,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {userId ? <ul className="space-y-1.5 p-4">
                 <li>
                   <Link className="flex items-center gap-x-3 py-2 px-3 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300" to="/assistant">
-                    Asistente
+                  Asesor Laboral
                   </Link>
                 </li>
 
@@ -127,13 +127,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </li>
                 <li>
-                  <Link to={"/contractDetails"} className="flex items-center gap-x-3 py-2 px-3 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300" >
-                    Detalles Contrato
-                  </Link>
-                </li>
-                <li>
                   <Link to={"/contractData"} className="flex items-center gap-x-3 py-2 px-3 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300" >
-                    Datos Contrato
+                    Datos de Contrato
                   </Link>
                 </li>{/* 
                 <li>
@@ -147,7 +142,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="mt-auto">
               <div className="p-4 border-t border-gray-200 dark:border-neutral-700">
                 {userId ? <Link className="flex justify-between items-center gap-x-3 py-2 px-3 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300" to="/logout">
-                  Log Out
+                  Desconectarse
                   <svg className="flex-shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" x2="3" y1="12" y2="12" /></svg>
                 </Link> : <Link className="flex justify-between items-center gap-x-3 py-2 px-3 text-sm text-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-300" to="/login">
                   Ingresar
