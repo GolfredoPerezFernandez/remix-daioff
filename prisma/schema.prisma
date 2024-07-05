@@ -18,13 +18,17 @@ model User {
   firstName      String
   lastName       String
   bio            String?
-  birthday       DateTime?  // Cambiado a DateTime para manejar fechas correctamente
+preferUpload       Boolean?
+  birthday       DateTime? 
   gender         String?
   avatar         String?
   profession     String?
   community      String?
   city           String?
   province       String?
+  payrollFile    String?
+  laborLifeFile  String?
+  contractFile   String?
   threadId       String?
   address        String?
   contract       Contract?

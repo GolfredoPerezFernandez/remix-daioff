@@ -155,10 +155,16 @@ export async function action({ request }: ActionFunctionArgs) {
       threadId,
       messagePayload
     );
+    console.log("preferUpload "+contractDetails?.preferUpload)
+
+    console.log("contractDetails "+contractDetails?.laborLifeFile)
+    console.log("contractDetails "+contractDetails?.payrollFile)
+    console.log("contractDetails "+contractDetails?.contractFile)
 
     const stream = openai.beta.threads.runs.stream(threadId, {
       assistant_id: assistantID,
-      instructions: ` Información del Usuario:
+      instructions: contractDetails?.preferUpload?
+      ` Información del Usuario en estos archivos ${contractDetails?.contractFile} y este ${contractDetails?.payrollFile} y este ${contractDetails?.laborLifeFile} para obtener la informacion del usuario.`:` Información del Usuario:
       Nombre: ${userProfile.firstName} ${userProfile.lastName},
       Correo Electrónico: ${userProfile.email},
       Biografía: ${userProfile.bio},

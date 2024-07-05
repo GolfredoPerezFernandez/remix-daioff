@@ -1,10 +1,9 @@
 import { useActionData, useFetcher, useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
-import { ActionFunction, LoaderFunction, json, redirect } from "@remix-run/server-runtime";
+import { json, redirect } from "@remix-run/server-runtime";
 import { getUserDetails, saveDetails, fetchUserContractDetails, saveContractDetails } from "~/utils/queries.server";
 
-// Define loader function to preload data if necessary
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader = async ({ request }) => {
   const contractDetails = await getUserDetails(request);
   const userContractDetails = await fetchUserContractDetails(request);
   if (!contractDetails) {
@@ -13,8 +12,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   return json({ contractDetails, userContractDetails });
 };
 
-// Define action function to handle form submissions
-export const action: ActionFunction = async ({ request }) => {
+export const action = async ({ request }) => {
   const formData = await request.formData();
   const contractDetails = {
     profession: formData.get("profession"),
@@ -32,10 +30,17 @@ export const action: ActionFunction = async ({ request }) => {
     extraPayments: formData.get("extraPayments"),
     sector: formData.get("sector"),
     cotizationGroup: formData.get("cotizationGroup"),
-    file: formData.get("file")
   };
 
-  const saveResult = await saveDetails(contractDetails, request);
+  const files = {
+    payrollFile: formData.get("payrollFile"),
+    laborLifeFile: formData.get("laborLifeFile"),
+    contractFile: formData.get("contractFile"),
+  };
+
+  const preferUpload = formData.get("preferUpload") === "on";
+console.log(" payrollFile "+formData.get("payrollFile"))
+  const saveResult = await saveDetails(contractDetails, files, preferUpload, request);
   const saveUserContractResult = await saveContractDetails(contractDetails, request);
   return json({ saveResult, saveUserContractResult });
 };
@@ -161,9 +166,12 @@ export default function ContractDetails() {
   const [contractDetails, setContractDetails] = useState(loaderData.contractDetails || {});
   const [userContractDetails, setUserContractDetails] = useState(loaderData.userContractDetails || {});
   const [provinces, setProvinces] = useState([]);
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [payrollFile, setPayrollFile] = useState(null);
+  const [laborLifeFile, setLaborLifeFile] = useState(null);
+  const [contractFile, setContractFile] = useState(null);
+  const [preferUpload, setPreferUpload] = useState(loaderData.contractDetails?.preferUpload || false);
+  const [filePreviews, setFilePreviews] = useState({ payrollFile: null, laborLifeFile: null, contractFile: null });
+  const [fileNames, setFileNames] = useState({ payrollFile: '', laborLifeFile: '', contractFile: '' });
 
   useEffect(() => {
     if (contractDetails.community) {
@@ -183,19 +191,20 @@ export default function ContractDetails() {
     }));
   };
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
+  const handleFileChange = (event) => {
+    const { name, files } = event.target;
+    const file = files[0];
     if (file) {
-      setFile(file);
-      setFileName(file.name);
-      if (file.type.startsWith("image/")) {
-        setFilePreview(URL.createObjectURL(file));
-      } else {
-        setFilePreview(null);
-      }
+      if (name === "payrollFile") setPayrollFile(file);
+      else if (name === "laborLifeFile") setLaborLifeFile(file);
+      else if (name === "contractFile") setContractFile(file);
     } else {
       alert("Please upload a valid file.");
     }
+  };
+
+  const handleCheckboxChange = () => {
+    setPreferUpload(!preferUpload);
   };
 
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-200";
@@ -205,255 +214,219 @@ export default function ContractDetails() {
       <div className="max-w-4xl px-4 py-10 sm:px-6 lg:px-8 mx-auto">
         <div className="bg-white rounded-xl shadow p-4 sm:p-7 dark:bg-neutral-800">
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-neutral-200">
-              Detalles del Contrato
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-neutral-400">
-              Gestiona los detalles de tu contrato.
-            </p>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-neutral-200">Detalles del Contrato</h2>
+            <p className="text-sm text-gray-600 dark:text-neutral-400">Gestiona los detalles de tu contrato.</p>
           </div>
           <form method="POST" encType="multipart/form-data" className="space-y-6">
-            <div>
-              <label htmlFor="profession" className={labelClass}>
-                Profesión
-              </label>
-              <select
-                name="profession"
-                value={contractDetails.profession || ''}
-                onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-              >
-                <option value="">Seleccione una profesión</option>
-                {typesValues3.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                id="preferUpload" 
+                name="preferUpload"
+                checked={preferUpload} 
+                onChange={handleCheckboxChange} 
+                className="relative w-[3.25rem] h-7 p-px bg-gray-100 border-transparent text-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:ring-blue-600 disabled:opacity-50 disabled:pointer-events-none checked:bg-none checked:text-blue-600 checked:border-blue-600 focus:checked:border-blue-600 dark:bg-neutral-800 dark:border-neutral-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-600
+                before:inline-block before:size-6 before:bg-white checked:before:bg-blue-200 before:translate-x-0 checked:before:translate-x-full before:rounded-full before:shadow before:transform before:ring-0 before:transition before:ease-in-out before:duration-200 dark:before:bg-neutral-400 dark:checked:before:bg-blue-200"
+              />
+              <label htmlFor="preferUpload" className="text-sm text-gray-500 ms-3 dark:text-neutral-400">Prefiero cargar archivos</label>
             </div>
 
-            <div>
-              <label htmlFor="community" className={labelClass}>
-                Comunidad Autónoma
-              </label>
-              <select
-                name="community"
-                value={contractDetails.community || ''}
-                onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-              >
-                <option value="">Seleccione una comunidad</option>
-                {Object.keys(provincesByCommunity).map((community) => (
-                  <option key={community} value={community}>{community}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="province" className={labelClass}>
-                Provincia
-              </label>
-              <select
-                name="province"
-                value={contractDetails.province || ''}
-                onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-              >
-                <option value="">Seleccione una provincia</option>
-                {provinces.map((province) => (
-                  <option key={province} value={province}>{province}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="address" className={labelClass}>
-                Dirección
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={contractDetails.address || ''}
-                onChange={handleInputChange}
-                className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="startDate" className={labelClass}>
-                Fecha de inicio del contrato
-              </label>
-              <input
-                type="date"
-                name="startDate"
-                value={userContractDetails.startDate || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className={labelClass}>
-                Fecha de finalización del contrato
-              </label>
-              <input
-                type="date"
-                name="endDate"
-                value={userContractDetails.endDate || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="contractType" className={labelClass}>
-                Tipo de contrato
-              </label>
-              <select
-                name="contractType"
-                value={userContractDetails.contractType || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              >
-                {typesValues2.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="trialPeriod" className={labelClass}>
-                Periodo de prueba
-              </label>
-              <select
-                name="trialPeriod"
-                value={userContractDetails.trialPeriod || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              >
-                <option value="yes">Sí</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="workdayType" className={labelClass}>
-                Tipo de jornada
-              </label>
-              <select
-                name="workdayType"
-                value={userContractDetails.workdayType || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              >
-                {workdayTypes.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="weeklyHours" className={labelClass}>
-                Horas semanales
-              </label>
-              <input
-                type="number"
-                name="weeklyHours"
-                value={userContractDetails.weeklyHours || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="netSalary" className={labelClass}>
-                Salario Neto
-              </label>
-              <input
-                type="number"
-                name="netSalary"
-                value={userContractDetails.netSalary || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="grossSalary" className={labelClass}>
-                Salario Bruto
-              </label>
-              <input
-                type="number"
-                name="grossSalary"
-                value={userContractDetails.grossSalary || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="extraPayments" className={labelClass}>
-                Pagas Extras
-              </label>
-              <input
-                type="number"
-                name="extraPayments"
-                value={userContractDetails.extraPayments || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="sector" className={labelClass}>
-                Sector / Sindicato
-              </label>
-              <select
-                name="sector"
-                value={userContractDetails.sector || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              >
-                {sectorsArray.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="cotizationGroup" className={labelClass}>
-                Grupo de Cotización
-              </label>
-              <select
-                name="cotizationGroup"
-                value={userContractDetails.cotizationGroup || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-              >
-                {jobCategories.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="file" className={labelClass}>
-                Subir archivo
-              </label>
-              <div className="flex items-center mt-1">
-                <label className="py-2 px-3 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent bg-red-600 text-white hover:bg-red-700 cursor-pointer">
-                  Seleccionar archivo
-                  <input
-                    type="file"
-                    name="file"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept=".c,.cs,.cpp,.doc,.docx,.html,.java,.json,.md,.pdf,.php,.pptx,.py,.rb,.tex,.txt,.css,.js,.sh,.ts"
-                  />
-                </label>
-                <span className="ml-3 text-sm text-gray-600 dark:text-neutral-400">{fileName || "Ningún archivo seleccionado"}</span>
-              </div>
-              {filePreview && (
-                <div className="mt-2">
-                  <img src={filePreview} alt="Preview" className="mt-2 h-20 w-20 object-cover" />
+            {preferUpload ? (
+              <>
+                <div>
+                  <label htmlFor="payrollFile" className={labelClass}>Archivo de Nómina</label>
+                  <input type="file" name="payrollFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
                 </div>
-              )}
-            </div>
+                <div>
+                  <label htmlFor="laborLifeFile" className={labelClass}>Archivo de Vida Laboral</label>
+                  <input type="file" name="laborLifeFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
+                </div>
+                <div>
+                  <label htmlFor="contractFile" className={labelClass}>Archivo de Contrato</label>
+                  <input type="file" name="contractFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="profession" className={labelClass}>Profesión</label>
+                  <select
+                    name="profession"
+                    value={contractDetails.profession || ''}
+                    onChange={handleInputChange}
+                    className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                  >
+                    <option value="">Seleccione una profesión</option>
+                    {typesValues3.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="community" className={labelClass}>Comunidad Autónoma</label>
+                  <select
+                    name="community"
+                    value={contractDetails.community || ''}
+                    onChange={handleInputChange}
+                    className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                  >
+                    <option value="">Seleccione una comunidad</option>
+                    {Object.keys(provincesByCommunity).map((community) => (
+                      <option key={community} value={community}>{community}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="province" className={labelClass}>Provincia</label>
+                  <select
+                    name="province"
+                    value={contractDetails.province || ''}
+                    onChange={handleInputChange}
+                    className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                  >
+                    <option value="">Seleccione una provincia</option>
+                    {provinces.map((province) => (
+                      <option key={province} value={province}>{province}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="address" className={labelClass}>Dirección</label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={contractDetails.address || ''}
+                    onChange={handleInputChange}
+                    className="py-2 mt-2 px-3 block w-full border-gray-300 shadow-sm text-sm rounded-lg focus:border-red-500 focus:ring-red-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="startDate" className={labelClass}>Fecha de inicio del contrato</label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={userContractDetails.startDate || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endDate" className={labelClass}>Fecha de finalización del contrato</label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={userContractDetails.endDate || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contractType" className={labelClass}>Tipo de contrato</label>
+                  <select
+                    name="contractType"
+                    value={userContractDetails.contractType || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    {typesValues2.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="trialPeriod" className={labelClass}>Periodo de prueba</label>
+                  <select
+                    name="trialPeriod"
+                    value={userContractDetails.trialPeriod || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    <option value="yes">Sí</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="workdayType" className={labelClass}>Tipo de jornada</label>
+                  <select
+                    name="workdayType"
+                    value={userContractDetails.workdayType || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    {workdayTypes.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="weeklyHours" className={labelClass}>Horas semanales</label>
+                  <input
+                    type="number"
+                    name="weeklyHours"
+                    value={userContractDetails.weeklyHours || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="netSalary" className={labelClass}>Salario Neto</label>
+                  <input
+                    type="number"
+                    name="netSalary"
+                    value={userContractDetails.netSalary || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="grossSalary" className={labelClass}>Salario Bruto</label>
+                  <input
+                    type="number"
+                    name="grossSalary"
+                    value={userContractDetails.grossSalary || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="extraPayments" className={labelClass}>Pagas Extras</label>
+                  <input
+                    type="number"
+                    name="extraPayments"
+                    value={userContractDetails.extraPayments || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="sector" className={labelClass}>Sector / Sindicato</label>
+                  <select
+                    name="sector"
+                    value={userContractDetails.sector || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    {sectorsArray.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="cotizationGroup" className={labelClass}>Grupo de Cotización</label>
+                  <select
+                    name="cotizationGroup"
+                    value={userContractDetails.cotizationGroup || ''}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    {jobCategories.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
             <div className="mt-5 flex justify-end gap-x-2">
               <button
                 type="submit"

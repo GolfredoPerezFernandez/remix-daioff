@@ -58,7 +58,7 @@ export const action: ActionFunction = async ({ request }) => {
             console.log("exitoo registro")
             
   let user = await createAccount(email, password,firstName,lastName);
-  return setAuthOnResponse(redirect("/"), user.id.toString());
+  return setAuthOnResponse(redirect("/contractData"), user.id.toString());
     
   
 }
