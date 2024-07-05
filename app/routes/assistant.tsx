@@ -1,3 +1,4 @@
+import type { LoaderArgs, LoaderArgs } from "@remix-run/node";
 import { json, useFetcher, useLoaderData } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import { useEventSource } from "remix-utils/sse/react";
@@ -10,6 +11,7 @@ import DID_API from './api.json';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const loader = async ({ request }) => {
+
   try {
     const userId = await getAuthFromRequest(request);
 
@@ -81,7 +83,7 @@ export default function Assistant() {
     }
   }
 
-  const liveResponse = useEventSource(`http://localhost:3000/api/subscribe`, { event: "new-message" });
+  const liveResponse = useEventSource(`https://localhost/api/subscribe`, { event: "new-message" });
 
   function stopAllStreams() {
     const videoElement = document.getElementById('talk-video');
@@ -462,6 +464,14 @@ export default function Assistant() {
     responseText = responseText.replace(/\\times/g, 'x'); // Reemplaza \times con x
     responseText = responseText.replace(/\\,€/g, '€'); // Elimina \, antes del símbolo de euro
     responseText = responseText.replace(/\\/g, '');
+
+    
+    responseText = responseText.replace(/[\*\#]+/g, '');
+    responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');
+    responseText = responseText.replace(/:/g, ': ');
+    responseText = responseText.replace(/-(?=\w)/g, ' ');
+    responseText = responseText.replace(/【.*?】/g, ' ');
+    responseText = responseText.replace(/\.(\D)/g, '. $1');
     return responseText;
   }
 

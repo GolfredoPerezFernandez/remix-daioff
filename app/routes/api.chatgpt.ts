@@ -120,24 +120,85 @@ export async function action({ request }: ActionFunctionArgs) {
       role: "user",
       content: [{ type: "text", text: `${messages}` }],
     };
-    if (fileId) {
-      if (filePurpose === 'vision') {
-        messagePayload.content = [
-          { "type": "text", "text": `${messages}` },
-          {
-            type: 'image_file',
-            image_file: {
-              file_id: fileId,
-            },
-          }
-        ];;
-      } else {
-        messagePayload.attachments = [{
-          file_id: fileId,
-          tools: [{ type: "file_search" }]
-        }];
-      }
+ 
+if(contractDetails?.preferUpload){
+  if(fileId){
+
+    if (filePurpose === 'vision') {
+      messagePayload.content = [
+        { "type": "text", "text": `${messages}` },
+        {
+          type: 'image_file',
+          image_file: {
+            file_id: fileId,
+          },
+        }
+      ];
+      messagePayload.attachments = [{
+        file_id: contractDetails?.laborLifeFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.payrollFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.contractFile?.toString(),
+        tools: [{ type: "file_search" }], 
+      }];
+    } else {
+      console.log("entro en archivo")
+      messagePayload.attachments = [{
+        file_id: contractDetails?.laborLifeFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.payrollFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.contractFile?.toString(),
+        tools: [{ type: "file_search" }]},{
+          
+        file_id: fileId,
+        tools: [{ type: "file_search" }]
+      }];
     }
+  }else{
+      messagePayload.attachments = [{
+        file_id: contractDetails?.laborLifeFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.payrollFile?.toString(),
+        tools: [{ type: "file_search" }]
+      },{
+        file_id: contractDetails?.contractFile?.toString(),
+        tools: [{ type: "file_search" }]}];
+  
+  }
+
+}else{
+
+
+  if(fileId){
+
+    if (filePurpose === 'vision') {
+      messagePayload.content = [
+        { "type": "text", "text": `${messages}` },
+        {
+          type: 'image_file',
+          image_file: {
+            file_id: fileId,
+          },
+        }
+      ];
+    } else {
+      console.log("entro en archivo")
+      messagePayload.attachments = [{
+          
+        file_id: fileId,
+        tools: [{ type: "file_search" }]
+      }];
+    }
+  }
+
+}
 
     let threadId = user.threadId;
     if (!threadId) {
@@ -164,7 +225,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const stream = openai.beta.threads.runs.stream(threadId, {
       assistant_id: assistantID,
       instructions: contractDetails?.preferUpload?
-      ` Información del Usuario en estos archivos ${contractDetails?.contractFile} y este ${contractDetails?.payrollFile} y este ${contractDetails?.laborLifeFile} para obtener la informacion del usuario.`:` Información del Usuario:
+      `##(IMPORTANTE!!)Si se necesita Información del Usuario tomate tu tiempo para buscar y extraela de los archivos de attachments con calma y con cuidado de no omitir nada.`:` Información del Usuario:
       Nombre: ${userProfile.firstName} ${userProfile.lastName},
       Correo Electrónico: ${userProfile.email},
       Biografía: ${userProfile.bio},
