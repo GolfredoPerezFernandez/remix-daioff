@@ -14,18 +14,11 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export async function action({ request }: ActionFunctionArgs) {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const messages = formData.get("messages") as string;
   const file = formData.get("file") as File;
   const assistantID = "asst_f1s1H1GvrhYXlUw2Lt6OxZwA";
-
-  console.log("Received assistantID:", assistantID);
-  if (file) {
-    console.log("Received file:", file.name);
-  } else {
-    console.log("No file received");
-  }
 
   let responseText = '';
   try {
@@ -38,10 +31,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const userProfile = await getUserProfile(request);
     const contractDetails = await getUserDetails(request);
     const userContractDetails = await fetchUserContractDetails(request);
-    console.log("contractDetails:", contractDetails);
-    console.log("userContractDetails:", userContractDetails);
-    console.log("userProfile:", userProfile);
-    console.log("userId:", JSON.stringify(userId));
 
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
@@ -56,63 +45,53 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: 'User not found in database' }, { status: 404 });
     }
 
-    console.log("user:", JSON.stringify(user));
-
     let fileId = '';
     let filePurpose = '';
 
     if (file) {
-      try {
-        const allowedFileTypes = [
-          'application/pdf',
-          'image/jpeg',
-          'image/png',
-          'text/plain',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ];
-        const maxSize = 10 * 1024 * 1024; // 10 MB
+      const allowedFileTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+      const maxSize = 10 * 1024 * 1024; // 10 MB
 
-        if (!allowedFileTypes.includes(file.type)) {
-          return json({ error: 'Unsupported file type' }, { status: 400 });
-        }
-        if (file.size > maxSize) {
-          return json({ error: 'File is too large' }, { status: 400 });
-        }
+      if (!allowedFileTypes.includes(file.type)) {
+        return json({ error: 'Unsupported file type' }, { status: 400 });
+      }
+      if (file.size > maxSize) {
+        return json({ error: 'File is too large' }, { status: 400 });
+      }
 
-        const uploadsDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir);
-        }
+      const uploadsDir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir);
+      }
 
-        const filePath = path.join(uploadsDir, file.name);
-        fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
+      const filePath = path.join(uploadsDir, file.name);
+      fs.writeFileSync(filePath, Buffer.from(await file.arrayBuffer()));
 
-        if (!fs.existsSync(filePath)) {
-          return json({ error: 'Failed to write file to disk' }, { status: 500 });
-        }
+      if (!fs.existsSync(filePath)) {
+        return json({ error: 'Failed to write file to disk' }, { status: 500 });
+      }
 
-        if (file.type.startsWith('image/')) {
-          filePurpose = 'vision';
-        } else {
-          filePurpose = 'assistants';
-        }
+      if (file.type.startsWith('image/')) {
+        filePurpose = 'vision';
+      } else {
+        filePurpose = 'assistants';
+      }
 
-        console.log("Uploading file to OpenAI");
-        const fileUploadResponse = await openai.files.create({
-          file: fs.createReadStream(filePath),
-          purpose: filePurpose,
-        });
-        fileId = fileUploadResponse.id;
+      const fileUploadResponse = await openai.files.create({
+        file: fs.createReadStream(filePath),
+        purpose: filePurpose,
+      });
+      fileId = fileUploadResponse.id;
 
-        if (!fileId) {
-          return json({ error: 'Failed to upload file to OpenAI' }, { status: 500 });
-        }
-
-        console.log("File uploaded with ID:", fileId);
-      } catch (uploadError) {
-        console.error("Error uploading file:", uploadError);
-        return json({ error: 'Failed to upload file' }, { status: 500 });
+      if (!fileId) {
+        return json({ error: 'Failed to upload file to OpenAI' }, { status: 500 });
       }
     }
 
@@ -120,91 +99,81 @@ export async function action({ request }: ActionFunctionArgs) {
       role: "user",
       content: [{ type: "text", text: `${messages}` }],
     };
- 
-if(contractDetails?.preferUpload){
-  if(fileId){
 
-    if (filePurpose === 'vision') {
-      messagePayload.content = [
-        { "type": "text", "text": `${messages}` },
-        {
-          type: 'image_file',
-          image_file: {
+    if (contractDetails?.preferUpload) {
+      if (fileId) {
+        if (filePurpose === 'vision') {
+          messagePayload.content = [
+            { "type": "text", "text": `${messages}` },
+            {
+              type: 'image_file',
+              image_file: {
+                file_id: fileId,
+              },
+            }
+          ];
+          messagePayload.attachments = [{
+            file_id: contractDetails?.laborLifeFile?.toString(),
+            tools: [{ type: "file_search" }]
+          }, {
+            file_id: contractDetails?.payrollFile?.toString(),
+            tools: [{ type: "file_search" }]
+          }, {
+            file_id: contractDetails?.contractFile?.toString(),
+            tools: [{ type: "file_search" }],
+          }];
+        } else {
+          messagePayload.attachments = [{
+            file_id: contractDetails?.laborLifeFile?.toString(),
+            tools: [{ type: "file_search" }]
+          }, {
+            file_id: contractDetails?.payrollFile?.toString(),
+            tools: [{ type: "file_search" }]
+          }, {
+            file_id: contractDetails?.contractFile?.toString(),
+            tools: [{ type: "file_search" }]
+          }, {
             file_id: fileId,
-          },
+            tools: [{ type: "file_search" }]
+          }];
         }
-      ];
-      messagePayload.attachments = [{
-        file_id: contractDetails?.laborLifeFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.payrollFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.contractFile?.toString(),
-        tools: [{ type: "file_search" }], 
-      }];
+      } else {
+        messagePayload.attachments = [{
+          file_id: contractDetails?.laborLifeFile?.toString(),
+          tools: [{ type: "file_search" }]
+        }, {
+          file_id: contractDetails?.payrollFile?.toString(),
+          tools: [{ type: "file_search" }]
+        }, {
+          file_id: contractDetails?.contractFile?.toString(),
+          tools: [{ type: "file_search" }]
+        }];
+      }
     } else {
-      console.log("entro en archivo")
-      messagePayload.attachments = [{
-        file_id: contractDetails?.laborLifeFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.payrollFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.contractFile?.toString(),
-        tools: [{ type: "file_search" }]},{
-          
-        file_id: fileId,
-        tools: [{ type: "file_search" }]
-      }];
-    }
-  }else{
-      messagePayload.attachments = [{
-        file_id: contractDetails?.laborLifeFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.payrollFile?.toString(),
-        tools: [{ type: "file_search" }]
-      },{
-        file_id: contractDetails?.contractFile?.toString(),
-        tools: [{ type: "file_search" }]}];
-  
-  }
-
-}else{
-
-
-  if(fileId){
-
-    if (filePurpose === 'vision') {
-      messagePayload.content = [
-        { "type": "text", "text": `${messages}` },
-        {
-          type: 'image_file',
-          image_file: {
+      if (fileId) {
+        if (filePurpose === 'vision') {
+          messagePayload.content = [
+            { "type": "text", "text": `${messages}` },
+            {
+              type: 'image_file',
+              image_file: {
+                file_id: fileId,
+              },
+            }
+          ];
+        } else {
+          messagePayload.attachments = [{
             file_id: fileId,
-          },
+            tools: [{ type: "file_search" }]
+          }];
         }
-      ];
-    } else {
-      console.log("entro en archivo")
-      messagePayload.attachments = [{
-          
-        file_id: fileId,
-        tools: [{ type: "file_search" }]
-      }];
+      }
     }
-  }
-
-}
 
     let threadId = user.threadId;
     if (!threadId) {
       const thread = await openai.beta.threads.create();
       threadId = thread.id;
-      console.log("New threadId:", threadId);
 
       await prisma.user.update({
         where: { id: parseInt(userId) },
@@ -216,17 +185,11 @@ if(contractDetails?.preferUpload){
       threadId,
       messagePayload
     );
-    console.log("preferUpload "+contractDetails?.preferUpload)
-
-    console.log("contractDetails "+contractDetails?.laborLifeFile)
-    console.log("contractDetails "+contractDetails?.payrollFile)
-    console.log("contractDetails "+contractDetails?.contractFile)
 
     const stream = openai.beta.threads.runs.stream(threadId, {
       assistant_id: assistantID,
-      instructions: contractDetails?.preferUpload?
-      `##(IMPORTANTE!!)Si se necesita Información del Usuario tomate tu tiempo para buscar y extraela de los archivos de attachments con calma y con cuidado de no omitir nada.`:` Información del Usuario:
-      Nombre: ${userProfile.firstName} ${userProfile.lastName},
+      instructions: contractDetails?.preferUpload ?
+        `##(IMPORTANTE!!)Si se necesita Información del Usuario tomate tu tiempo para buscar y examinar los 3 archivos de attachments con calma y intenga leer cada palabra y ten cuidado con los posibles errores o preguntas trampa como pedir informacion que no existe en los documentos si no hay informacion di que no hay.` : ` Información del Usuario:      Nombre: ${userProfile.firstName} ${userProfile.lastName},
       Correo Electrónico: ${userProfile.email},
       Biografía: ${userProfile.bio},
       Género: ${userProfile.gender},
@@ -273,6 +236,7 @@ if(contractDetails?.preferUpload){
 
         emitter.emit("message", {
           id: threadId,
+          userId: user.id,
           content: responseText,
           role: 'assistant',
         });
@@ -285,4 +249,4 @@ if(contractDetails?.preferUpload){
     console.error('Error with OpenAI:', error);
     return json({ error: 'Failed to get a response.' }, { status: 500 });
   }
-}
+};

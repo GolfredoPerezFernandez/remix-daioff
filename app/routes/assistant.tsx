@@ -1,4 +1,3 @@
-import type { LoaderArgs, LoaderArgs } from "@remix-run/node";
 import { json, useFetcher, useLoaderData } from "@remix-run/react";
 import { useState, useEffect, useRef } from "react";
 import { useEventSource } from "remix-utils/sse/react";
@@ -11,7 +10,6 @@ import DID_API from './api.json';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const loader = async ({ request }) => {
-
   try {
     const userId = await getAuthFromRequest(request);
 
@@ -33,6 +31,7 @@ export const loader = async ({ request }) => {
     const threadMessages = await openai.beta.threads.messages.list(user.threadId);
 
     return json({
+      userId,
       messages: threadMessages.data.reverse(),
     });
   } catch (error) {
@@ -42,15 +41,8 @@ export const loader = async ({ request }) => {
 };
 
 export default function Assistant() {
-  const { messages } = useLoaderData();
-
+  const { userId, messages } = useLoaderData();
   const fetcher = useFetcher();
-  let peerConnection;
-  let sessionClientAnswer;
-  let statsIntervalId;
-  let videoIsPlaying;
-  let lastBytesReceived;
-  let newStreamId;
   const [connected, setConnected] = useState(false);
   const [iniciando, setIniciando] = useState(false);
   const [isLoading, setLoading] = useState(false);
@@ -83,7 +75,7 @@ export default function Assistant() {
     }
   }
 
-  const liveResponse = useEventSource(`https://localhost/api/subscribe`, { event: "new-message" });
+  const liveResponse = useEventSource(`http://localhost:3000/api/subscribe`, { event: "new-message" });
 
   function stopAllStreams() {
     const videoElement = document.getElementById('talk-video');
@@ -238,7 +230,7 @@ export default function Assistant() {
 
   const [streamId, setNewStream] = useState(null);
   const [varsessionId, setNewSessionId] = useState(null);
-  let newSessionId = ""
+  let newSessionId = "";
 
   useEffect(() => {
     async function connectionInit() {
@@ -291,6 +283,7 @@ export default function Assistant() {
   useEffect(() => {
     if (liveResponse) {
       const message = JSON.parse(liveResponse);
+      console.log(" mensaje "+message)
       setHistory((prev) => {
         if (prev[prev.length - 1]?.role === 'assistant') {
           const updatedHistory = [...prev];
@@ -464,7 +457,6 @@ export default function Assistant() {
     responseText = responseText.replace(/\\times/g, 'x'); // Reemplaza \times con x
     responseText = responseText.replace(/\\,€/g, '€'); // Elimina \, antes del símbolo de euro
     responseText = responseText.replace(/\\/g, '');
-
     
     responseText = responseText.replace(/[\*\#]+/g, '');
     responseText = responseText.replace(/([a-zA-Z])(\d+)/g, '$1 $2');

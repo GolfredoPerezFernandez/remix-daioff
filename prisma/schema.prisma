@@ -28,13 +28,23 @@ preferUpload       Boolean?
   province       String?
   payrollFile    String?
   laborLifeFile  String?
+  messages       Message[]
+
   contractFile   String?
   threadId       String?
   address        String?
   contract       Contract?
   assistantID    String?  // Nuevo campo para guardar assistantID
 }
-
+model Message {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  content   String
+  role      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
 
 model Contract {
   id             Int        @id @default(autoincrement())
