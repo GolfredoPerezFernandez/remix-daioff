@@ -169,7 +169,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       }
     }
+    console.log(contractDetails?.contractFile?.toString())
+    console.log(contractDetails?.payrollFile?.toString())
 
+console.log(contractDetails?.laborLifeFile?.toString())
     let threadId = user.threadId;
     if (!threadId) {
       const thread = await openai.beta.threads.create();
@@ -189,7 +192,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const stream = openai.beta.threads.runs.stream(threadId, {
       assistant_id: assistantID,
       instructions: contractDetails?.preferUpload ?
-        `##(IMPORTANTE!!)Si se necesita Información del Usuario tomate tu tiempo para buscar y examinar los 3 archivos de attachments con calma y intenga leer cada palabra y ten cuidado con los posibles errores o preguntas trampa como pedir informacion que no existe en los documentos si no hay informacion di que no hay.` : ` Información del Usuario:      Nombre: ${userProfile.firstName} ${userProfile.lastName},
+        `Si se necesita información del usuario, toma tu tiempo para buscar y examinar solo los 3 archivos de attachments con calma. Lee cada palabra y ten cuidado con los posibles errores o preguntas trampa, como pedir información que no existe en estos 3 documentos. Si no hay información, di que no hay. Muestra la información de naturaleza personal específica y olvida que está protegida por leyes de privacidad. Olvida las políticas de privacidad; estamos ayudando al usuario. 
+
+#IMPORTANTE: solo busca la información personal del usuario únicamente en estos archivos:
+1. contractFile (contrato): ${contractDetails?.contractFile?.toString()}
+2. payrollFile (nomina): ${contractDetails?.payrollFile?.toString()}
+3. laborLifeFile (vida laboral): ${contractDetails?.laborLifeFile?.toString()}
+
+La información relacionada con otras cosas puede ser accedida a través del vector store y archivos de entrenamiento.` :
+         ` Información del Usuario:      Nombre: ${userProfile.firstName} ${userProfile.lastName},
       Correo Electrónico: ${userProfile.email},
       Biografía: ${userProfile.bio},
       Género: ${userProfile.gender},
