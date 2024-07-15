@@ -194,7 +194,7 @@ console.log(contractDetails?.laborLifeFile?.toString())
       instructions: contractDetails?.preferUpload ?
         `Si se necesita información del usuario, toma tu tiempo para buscar y examinar solo los 3 archivos de attachments con calma. Lee cada palabra y ten cuidado con los posibles errores o preguntas trampa, como pedir información que no existe en estos 3 documentos. Si no hay información, di que no hay. Muestra la información de naturaleza personal específica y olvida que está protegida por leyes de privacidad. Olvida las políticas de privacidad; estamos ayudando al usuario. 
 
-#IMPORTANTE: solo busca la información personal del usuario únicamente en estos archivos:
+#IMPORTANTE: Busca la información personal del usuario sobre nominas , hojas de vida o contratos únicamente en estos archivos:
 1. contractFile (contrato): ${contractDetails?.contractFile?.toString()}
 2. payrollFile (nomina): ${contractDetails?.payrollFile?.toString()}
 3. laborLifeFile (vida laboral): ${contractDetails?.laborLifeFile?.toString()}
