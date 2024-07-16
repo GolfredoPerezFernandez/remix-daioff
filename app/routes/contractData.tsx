@@ -2,14 +2,39 @@ import { useActionData, useFetcher, useLoaderData } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import { json, redirect } from "@remix-run/server-runtime";
 import { getUserDetails, saveDetails, fetchUserContractDetails, saveContractDetails } from "~/utils/queries.server";
+import {  OpenAI } from "openai";
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+
+export async function retrieveFileName(fileId) {
+  try {
+    const response = await openai.files.retrieve(fileId);
+    return response.filename;
+  } catch (error) {
+    console.error("Error retrieving file name: ", error);
+    return null;
+  }
+}
 export const loader = async ({ request }) => {
   const contractDetails = await getUserDetails(request);
   const userContractDetails = await fetchUserContractDetails(request);
+  
   if (!contractDetails) {
     return redirect("/");
   }
-  return json({ contractDetails, userContractDetails });
+
+  const payrollFileName = contractDetails.payrollFile ? await retrieveFileName(contractDetails.payrollFile) : null;
+  const laborLifeFileName = contractDetails.laborLifeFile ? await retrieveFileName(contractDetails.laborLifeFile) : null;
+  const contractFileName = contractDetails.contractFile ? await retrieveFileName(contractDetails.contractFile) : null;
+
+  return json({ 
+    contractDetails, 
+    userContractDetails, 
+    payrollFileName, 
+    laborLifeFileName, 
+    contractFileName 
+  });
 };
 
 export const action = async ({ request }) => {
@@ -39,7 +64,6 @@ export const action = async ({ request }) => {
   };
 
   const preferUpload = formData.get("preferUpload") === "on";
-console.log(" payrollFile "+formData.get("payrollFile"))
   const saveResult = await saveDetails(contractDetails, files, preferUpload, request);
   const saveUserContractResult = await saveContractDetails(contractDetails, request);
   return json({ saveResult, saveUserContractResult });
@@ -166,12 +190,15 @@ export default function ContractDetails() {
   const [contractDetails, setContractDetails] = useState(loaderData.contractDetails || {});
   const [userContractDetails, setUserContractDetails] = useState(loaderData.userContractDetails || {});
   const [provinces, setProvinces] = useState([]);
-  const [payrollFile, setPayrollFile] = useState(null);
-  const [laborLifeFile, setLaborLifeFile] = useState(null);
-  const [contractFile, setContractFile] = useState(null);
+  const [payrollFile, setPayrollFile] = useState(loaderData.contractDetails?.payrollFile || null);
+  const [laborLifeFile, setLaborLifeFile] = useState(loaderData.contractDetails?.laborLifeFile || null);
+  const [contractFile, setContractFile] = useState(loaderData.contractDetails?.contractFile || null);
   const [preferUpload, setPreferUpload] = useState(loaderData.contractDetails?.preferUpload || false);
-  const [filePreviews, setFilePreviews] = useState({ payrollFile: null, laborLifeFile: null, contractFile: null });
-  const [fileNames, setFileNames] = useState({ payrollFile: '', laborLifeFile: '', contractFile: '' });
+  const [filePreviews, setFilePreviews] = useState({
+    payrollFile: loaderData.payrollFileName || null,
+    laborLifeFile: loaderData.laborLifeFileName || null,
+    contractFile: loaderData.contractFileName || null,
+  });
 
   useEffect(() => {
     if (contractDetails.community) {
@@ -195,9 +222,16 @@ export default function ContractDetails() {
     const { name, files } = event.target;
     const file = files[0];
     if (file) {
-      if (name === "payrollFile") setPayrollFile(file);
-      else if (name === "laborLifeFile") setLaborLifeFile(file);
-      else if (name === "contractFile") setContractFile(file);
+      if (name === "payrollFile") {
+        setPayrollFile(file);
+        setFilePreviews(prev => ({ ...prev, payrollFile: file.name }));
+      } else if (name === "laborLifeFile") {
+        setLaborLifeFile(file);
+        setFilePreviews(prev => ({ ...prev, laborLifeFile: file.name }));
+      } else if (name === "contractFile") {
+        setContractFile(file);
+        setFilePreviews(prev => ({ ...prev, contractFile: file.name }));
+      }
     } else {
       alert("Please upload a valid file.");
     }
@@ -235,15 +269,18 @@ export default function ContractDetails() {
               <>
                 <div>
                   <label htmlFor="payrollFile" className={labelClass}>Archivo de Nómina</label>
-                  <input type="file" name="payrollFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
+                  <input type="file" name="payrollFile" accept=".pdf" onChange={handleFileChange} />
+                  {filePreviews.payrollFile && <p>Archivo actual: {filePreviews.payrollFile}</p>}
                 </div>
                 <div>
                   <label htmlFor="laborLifeFile" className={labelClass}>Archivo de Vida Laboral</label>
-                  <input type="file" name="laborLifeFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
+                  <input type="file" name="laborLifeFile" accept=".pdf" onChange={handleFileChange} />
+                  {filePreviews.laborLifeFile && <p>Archivo actual: {filePreviews.laborLifeFile}</p>}
                 </div>
                 <div>
                   <label htmlFor="contractFile" className={labelClass}>Archivo de Contrato</label>
-                  <input type="file" name="contractFile" accept=".pdf,.jpg,.png" onChange={handleFileChange} />
+                  <input type="file" name="contractFile" accept=".pdf" onChange={handleFileChange} />
+                  {filePreviews.contractFile && <p>Archivo actual: {filePreviews.contractFile}</p>}
                 </div>
               </>
             ) : (

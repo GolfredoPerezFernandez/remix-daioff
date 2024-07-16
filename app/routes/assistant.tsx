@@ -75,7 +75,7 @@ export default function Assistant() {
     }
   }
 
-  const liveResponse = useEventSource(`https://daioff.fly.dev/api/subscribe`, { event: "new-message" });
+  const liveResponse = useEventSource(`http://localhost:3000/api/subscribe`, { event: "new-message" });
 
   function stopAllStreams() {
     const videoElement = document.getElementById('talk-video');
@@ -283,7 +283,6 @@ export default function Assistant() {
   useEffect(() => {
     if (liveResponse) {
       const message = JSON.parse(liveResponse);
-      console.log(" mensaje "+message)
       setHistory((prev) => {
         if (prev[prev.length - 1]?.role === 'assistant') {
           const updatedHistory = [...prev];
